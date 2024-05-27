@@ -3,7 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
-import json,time,re,sys
+import json,time,re,sys,os
 
 
 
@@ -22,11 +22,6 @@ class WebScrap:
                 original_driver.switch_to.window(original)
                 driver = original_driver
                 time.sleep(1)
-           
-                
-            
-            #//div[@id="pegeDocumento"]
-            #input_text = driver.find_element(By.XPATH, '/html/body/div/div[2]/div/div/div/div/div[3]/form/div/fielset')
         # panel_class = driver.find_element(By.XPATH,'/html/body/div/div[2]/div/div/div/div/div[3]/form/div/fielset/div/input')
             iframe = driver.find_element(By.XPATH,'/html/body/iframe')
             #por la mala estructura de la pargina, se tuvo que cambiar el contexto del ifram primero, 
@@ -34,26 +29,40 @@ class WebScrap:
             #llamdas de los elementos
             driver.switch_to.frame(iframe)
             driver.execute_script("document.body.style.pointerEvents = 'auto';")
-            input_txt = driver.find_element(By.XPATH,'//*[@id="pegeDocumento"]')
-            buton = driver.find_element(By.XPATH,'//*[@id="btnEnviar"]')
-            input_txt.clear()
-            input_txt.send_keys(qr_decode)
+            if original_driver is not None:
+                input_txt = driver.find_element(By.XPATH,'//*[@id="pegeDocumento"]')
+                buton = driver.find_element(By.XPATH,'//*[@id="btnEnviar"]')
+                input_txt.clear()
+                input_txt.send_keys(qr_decode)
         #  print(f"input encontrado")
-            buton.click()
-            time.sleep(1)
+                buton.click()
+                time.sleep(1)
+            #script para el caret de la caja de texto y para el eventos del body bloqueados
+            element_xpath = "/html/body/div/div[2]/div"
+            image_path = os.path.abspath('logo.jpg')
+            style_by_input = f"""
+            var element = document.evaluate('{element_xpath}', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+            var body = document.body;
+            body.style.pointerEvents = 'none';
+            element.style.backgroundImage = "url('./assets/logo.jpg')";
+            element.style.backgroundRepeat = 'no-repeat';
+            elemnet.style.backgroundSize = "cover";
+            var input = document.getElementById('pegeDocumento');
+            input.style.caretColor = 'transparent';
+            """
             title = driver.find_element(By.XPATH,'/html/body/div/nav/div/div[1]/span')
-            
             original_title = title.text
             #print(f"El titulo original es: {original_title}")
-            new_title = f"{original_title} POR NICOLÁS RODRÍGUEZ TORRES"
+            new_title = f"{original_title}: POR NICOLÁS RODRÍGUEZ TORRES"
             driver.execute_script("arguments[0].textContent = arguments[1];",title,new_title)
-            description = self.facultad(driver=driver)
-            if description == None:
-                print("ususario erroneo, o descripcion no encontrada")
-                return driver
-            else:
-                print(description)
-            driver.execute_script("document.body.style.pointerEvents = 'none';")
+            if original_driver is not None:
+                description = self.facultad(driver=driver)
+                if description == None:
+                    print("ususario erroneo, o descripcion no encontrada")
+                    return driver
+                else:
+                    print(description)
+            driver.execute_script(style_by_input)
             #print("Titulo cambiado")
         except Exception as e:
             print(f"Excepcion controlada, posible falla de conexion al tratar de acceder a la pagina o a un item de la misma")
@@ -67,7 +76,7 @@ class WebScrap:
         try:
             if cont >= 5:
                 return None
-            time.sleep(1)
+            time.sleep(2)
             descriptions = driver.find_element(By.XPATH,'//*[@id="div_informacion"]//table/tbody/tr[4]/td')
             #print(descriptions.get_attribute('innerHTML'))
             description_of_facultad = descriptions.text

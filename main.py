@@ -3,8 +3,7 @@ from pyzbar import pyzbar
 from concurrent.futures  import ThreadPoolExecutor
 from resources.web_srap import WebScrap
 from resources.bar_code import Bar_code
-import threading
-
+import pyautogui
 #estas librerias son para el windows, para dejar fijas las vintanas
 #import win32gui, win32con
 
@@ -13,27 +12,34 @@ obj = WebScrap()
 global driver
 global ant_qr,qr_code
 global cont
+global cap
+#este codigo trae el tamaño de la pantalla ususario
+
 cont = 0
-driver = None
 ant_qr = qr_code = 0
-#aqui se define un bloque, para que las variables anteriormente mencionadas, se puedan manejar
-#entre hilos
-global_lok = threading.Lock()
+
+
 #este bloque se llama antes de inicializar cada seteo de variables o cada vez que se llame una 
-def cam_start():
-    cap = cv2.VideoCapture(0)
-    return cap
+def cam_start():   
+    global driver
+    driver_return = executor.submit(obj.web,qr_code)
+    driver =  driver_return.result()
+   
 def leer_codigo_qr():
     global driver
-    cap = cam_start()
+    global cap
+    cam_start()
     global ant_qr,qr_code
     global cont
-
-
+    cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH,500)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT,300)
+    screen_width, screen_height = pyautogui.size()
    # hwnd = win32gui.FindWindow(None, "Camera")
    # win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0, win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
     while cap.isOpened():
         ret, frame = cap.read()
+      #  cv2.namedWindow('Registro Biblioteca Facatativá',cv2.WINDOW_NORMAL)
         codigos_qr = pyzbar.decode(frame)
         for codigo_qr in codigos_qr:
             (x, y, w, h) = codigo_qr.rect
@@ -42,16 +48,14 @@ def leer_codigo_qr():
             cv2.putText(frame, qr_code, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)  
           #  print("Contenido decodificado del código QR:", qr_code)
             print(f"EL qr anteriror es: {ant_qr}")
-            with global_lok:
-                if ant_qr != qr_code and cont < 1:
-                    driver_return = executor.submit(obj.web,qr_code)
-                    driver =  driver_return.result()
-                    cont += 1
-                elif ant_qr != qr_code and cont > 0:
+            if ant_qr != qr_code:
                     executor.submit(obj.web,qr_code,driver)
-               
+            elif ant_qr != qr_code and cont > 0:
+                    executor.submit(obj.web,qr_code,driver)    
             ant_qr = qr_code
-        cv2.imshow('Camara', frame)
+        if ret == True:
+             cv2.imshow('Universidad de Cundinamarca-Facatativa', frame)          
+             cv2.moveWindow('Universidad de Cundinamarca-Facatativa',screen_width,screen_height)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             try:
              obj.exit(driver=driver)
@@ -60,36 +64,10 @@ def leer_codigo_qr():
             break
     cap.release()
     cv2.destroyAllWindows()
-def leer_barras():
-     global driver 
-     global ant_qr,qr_code
-     global cont
-     obj_bar = Bar_code()
-     while True:
-        try:
-             qr_code = obj_bar.main()  
-             with global_lok: 
-                if ant_qr != qr_code and driver == None:
-                    driver_return =  executor.submit(obj.web,qr_code)
-                    driver = driver_return.result()
-                    
-                    cont += 1
-                elif ant_qr != qr_code:
-                     print(f"el qr_anterior es: {ant_qr}")
-                     executor.submit(obj.web,qr_code,driver) 
-                ant_qr = qr_code 
-        except Exception as e:
-            print(f"error en la carga de barras {e}")
 
 if __name__ == "__main__":
- 
-  thread_qr = threading.Thread(target=leer_codigo_qr)
-  thread_qr.start()
-  thread_bar = threading.Thread(target=leer_barras)
-  thread_bar.start()
+ leer_codigo_qr()
 
-  thread_qr.join() 
-  thread_bar.join()
   
 
 
