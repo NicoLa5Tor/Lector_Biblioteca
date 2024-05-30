@@ -9,13 +9,16 @@ import json,time,re,sys,os
 
 class WebScrap:
     def __init__(self):
-        self.url = self.config()
+        self.data = self.config()
     def web(self,qr_decode,original_driver = None):
+        driver = None
         try:
+            print("entra al try")
             #print(f"url es: {self.url}")
             if original_driver == None:
+                print("entra el if de original driver")
                 driver = webdriver.Firefox()
-                driver.get(self.url)
+                driver.get(self.data['url'])
                 time.sleep(2)
             else:
                 original = original_driver.current_window_handle
@@ -39,14 +42,13 @@ class WebScrap:
                 time.sleep(1)
             #script para el caret de la caja de texto y para el eventos del body bloqueados
             element_xpath = "/html/body/div/div[2]/div"
-            image_path = os.path.abspath('logo.jpg')
             style_by_input = f"""
             var element = document.evaluate('{element_xpath}', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
             var body = document.body;
             body.style.pointerEvents = 'none';
-            element.style.backgroundImage = "url('./assets/logo.jpg')";
+            element.style.backgroundImage = "url('data:image/jpg;base64,{self.data['logo']}')";
             element.style.backgroundRepeat = 'no-repeat';
-            elemnet.style.backgroundSize = "cover";
+            element.style.backgroundPosition = "left center"; 
             var input = document.getElementById('pegeDocumento');
             input.style.caretColor = 'transparent';
             """
@@ -65,13 +67,13 @@ class WebScrap:
             driver.execute_script(style_by_input)
             #print("Titulo cambiado")
         except Exception as e:
-            print(f"Excepcion controlada, posible falla de conexion al tratar de acceder a la pagina o a un item de la misma")
+            print(f"Excepcion controlada, posible falla de conexion al tratar de acceder a la pagina o a un item de la misma, {e}")
         finally:
             return driver
     def config(self):
         with open('config.json','r') as data:
             dat = json.load(data)
-        return dat['url']
+        return dat
     def facultad(self, driver,cont = 0):
         try:
             if cont >= 5:
