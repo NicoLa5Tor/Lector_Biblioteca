@@ -3,9 +3,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
+from .message import Message as me
 import json,time,re,sys,os
-
-
 
 class WebScrap:
     def __init__(self):
@@ -67,6 +66,7 @@ class WebScrap:
             driver.execute_script(style_by_input)
             #print("Titulo cambiado")
         except Exception as e:
+            me.show_message_error(message="Ocurrio algo al tratar de abrir el navegador, espere un momento e intentelo de nuevo")
             print(f"Excepcion controlada, posible falla de conexion al tratar de acceder a la pagina o a un item de la misma, {e}")
         finally:
             return driver
@@ -99,6 +99,7 @@ class WebScrap:
     def exit(self,driver):
         try:
             driver.quit()
+            print("se termina el proceso web")
             sys.exit()
         except Exception as e:
             print("proceso terminado")
