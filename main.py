@@ -10,7 +10,8 @@ from resources.message import Message
 #estas librerias son para el windows, para dejar fijas las vintanas
 #import win32gui, win32con
 
-executor = ThreadPoolExecutor(max_workers=1)
+executor = ThreadPoolExecutor(max_workers=2)
+aux_wait = ThreadPoolExecutor(max_workers=1)
 obj = WebScrap()
 message = Message()
 global driver
@@ -42,7 +43,7 @@ def leer_codigo_qr():
     cap.set(cv2.CAP_PROP_FRAME_WIDTH,300)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT,300)
     screen_width, screen_height = pyautogui.size()
-    message.show_message_info(message="Programa en ejecucion, precion aceptar para comenzar")
+    message.show_message_info(message="Programa en ejecución, preciona aceptar para comenzar")
 
 
    
@@ -62,9 +63,12 @@ def leer_codigo_qr():
           #  print("Contenido decodificado del código QR:", qr_code)
             print(f"EL qr anteriror es: {ant_qr}")
             if ant_qr != qr_code:
-                    executor.submit(obj.web,qr_code,driver)
+                    driver_t = executor.submit(obj.web,qr_code,driver)
                     with global_lok:
+                      driver = driver_t.result()
                       ant_qr = qr_code
+                    aux_wait.submit(obj.web,original_driver=driver,refresh=True,qr_decode=0)
+
             
         cv2.imshow('Universidad de Cundinamarca-Facatativa', frame)        
         cv2.moveWindow('Universidad de Cundinamarca-Facatativa',(screen_width - 350),(screen_height - 350))
@@ -86,6 +90,8 @@ def barcode_scanner():
         event = keyboard.read_event()
         if event.event_type == keyboard.KEY_DOWN:
             char = event.name
+            if char == "t":
+                executor.submit(obj.web,"1193602390",driver)
             if char == "q":
                 print("proceso termiando")
                 try:   
@@ -106,9 +112,12 @@ def barcode_scanner():
                     qr_code = barcode
                     barcode = ""  # Reiniciar el código de barra
                     if ant_qr != qr_code:
-                         executor.submit(obj.web,qr_code,driver)
+                         driver_ret = executor.submit(obj.web,qr_code,driver)
+
                          with global_lok:
+                              driver = driver_ret.result()
                               ant_qr = qr_code
+                         aux_wait.submit(obj.web,original_driver=driver,refresh=True,qr_decode=0)
             else:
                 if char.isdigit():
                   barcode += char
