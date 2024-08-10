@@ -4,3 +4,7 @@ pyautogui
 selenium
 keyboard
 opencv-python
+pymongo
+plyer
+pygame
+
